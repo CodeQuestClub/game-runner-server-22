@@ -38,6 +38,7 @@ class Game:
             self.matches.extend(combs(self.groups[key], num_players))
 
     def get_next_match(self):
+        # need to implement logic to give next match after every call
         self.match_history.append(self.matches.pop())
         return self.match_history[-1]
 
