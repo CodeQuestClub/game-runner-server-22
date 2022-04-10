@@ -81,16 +81,14 @@ def zipdir(path, ziph):
 @app.route("/get-match")
 def send_report():
     matches = glob.glob(app.config['MATCH_DIRECTORY']+'*')
-    print(len(matches))
 
     played_path = os.path.join(app.root_path, 'played/')
     if not os.path.exists(played_path):
         os.makedirs(played_path)
 
     os.replace(matches[0], played_path + matches[0].split('\\')[-1])
-    matches = glob.glob(played_path+'*')
-    print(len(matches))
-    return send_file(matches[0])
+
+    return send_file(played_path + matches[0].split('\\')[-1])
 
 
 @app.route("/init-game")
