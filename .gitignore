@@ -1,7 +1,11 @@
-matches
-gameFiles_old
-gameFiles
-zipFiles
+__pycache__
 venv
+.venv
 played
 .idea
+.vscode
+supervisord.pid
+app/uwsgi.ini
+app/static/
+data/*
+.DS_Store
