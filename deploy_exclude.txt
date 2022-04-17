@@ -1,0 +1,8 @@
+__pycache__
+.venv
+.vscode
+app/__pycache__
+static
+app/static
+app/uwsgi.ini
+.DS_Store
