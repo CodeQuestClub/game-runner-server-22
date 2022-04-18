@@ -2,6 +2,7 @@ import time
 import json
 from logs import log
 from lock import lock_matches, unlock_matches
+from random import random
 
 
 class Match:
@@ -43,6 +44,7 @@ def save_all_matches(matches, lock=True):
         normalized_matches = [match.__dict__ for match in matches]
         with open('../data/matches.json', 'w') as f:
             f.write(json.dumps(normalized_matches))
+        time.sleep(random()/8)
     except Exception:
         pass
     if lock:
@@ -56,7 +58,7 @@ def load_matches(lock=True):
     try:
         with open('../data/matches.json', 'r') as f:
             raw_matches = json.loads(f.read())
-            result = [Match.from_dict(raw_match) for raw_match in raw_matches]
+        result = [Match.from_dict(raw_match) for raw_match in raw_matches]
     except Exception:
         log('Unable to load the matches from json file')
     if lock:
@@ -65,7 +67,10 @@ def load_matches(lock=True):
 
 
 def unassign_all_expired_matches(matches, lock=True):
+    found_any = False
     for match in matches:
         if match.is_expired():
+            found_any = True
             match.unassign()
-    save_all_matches(matches, lock)
+    if found_any:
+        save_all_matches(matches, lock)
