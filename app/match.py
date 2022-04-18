@@ -5,6 +5,9 @@ from lock import lock_matches, unlock_matches
 from random import random
 
 
+_last_backup = 0
+
+
 class Match:
     IN_QUEUE = 'queue'
     IN_PROGRESS = 'in_progress'
@@ -38,10 +41,15 @@ class Match:
 
 
 def save_all_matches(matches, lock=True):
+    global _last_backup
     if lock:
         lock_matches()
     try:
         normalized_matches = [match.__dict__ for match in matches]
+        if time.time() - _last_backup >= 60:
+            with open('../data/matches_backup.json', 'w') as f:
+                f.write(json.dumps(normalized_matches))
+            _last_backup = time.time()
         with open('../data/matches.json', 'w') as f:
             f.write(json.dumps(normalized_matches))
         time.sleep(random()/8)
