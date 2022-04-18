@@ -1,6 +1,7 @@
 import time
 import json
 from logs import log
+from lock import lock_matches, unlock_matches
 
 
 class Match:
@@ -35,24 +36,36 @@ class Match:
         return self.start_time is not None and int(time.time()) - self.start_time >= 20 * 60
 
 
-def save_all_matches(matches):
-    normalized_matches = [match.__dict__ for match in matches]
-    with open('../data/matches.json', 'w') as f:
-        f.write(json.dumps(normalized_matches))
+def save_all_matches(matches, lock=True):
+    if lock:
+        lock_matches()
+    try:
+        normalized_matches = [match.__dict__ for match in matches]
+        with open('../data/matches.json', 'w') as f:
+            f.write(json.dumps(normalized_matches))
+    except Exception:
+        pass
+    if lock:
+        unlock_matches()
 
 
-def load_matches():
+def load_matches(lock=True):
+    if lock:
+        lock_matches()
+    result = []
     try:
         with open('../data/matches.json', 'r') as f:
             raw_matches = json.loads(f.read())
-            return [Match.from_dict(raw_match) for raw_match in raw_matches]
+            result = [Match.from_dict(raw_match) for raw_match in raw_matches]
     except Exception:
         log('Unable to load the matches from json file')
-        return []
+    if lock:
+        unlock_matches()
+    return result
 
 
-def unassign_all_expired_matches(matches):
+def unassign_all_expired_matches(matches, lock=True):
     for match in matches:
         if match.is_expired():
             match.unassign()
-    save_all_matches(matches)
+    save_all_matches(matches, lock)

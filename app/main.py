@@ -4,14 +4,19 @@ import config
 from logs import log
 from files import process_all_submissions, make_submissions_public
 from game import create_game_groups, load_groups, create_game_matches
-from teams import load_all_teams
+from teams import load_all_teams, save_all_teams
 from match import Match, unassign_all_expired_matches, load_matches, save_all_matches
-
+from lock import lock_matches, unlock_matches
 
 app = Flask(__name__)
 
 
+def load_all_objects():
+    return load_all_teams(), load_groups(), load_matches()
+
+
 def initialize():
+    log("Initializing...")
     process_all_submissions(
         config.raw_submissions_folder,
         config.clean_submissions_folder,
@@ -33,12 +38,8 @@ def initialize():
             config.matching_strategy,
             config.random_matching_matches_per_team
         )
-    matches = load_matches()
 
-    return teams, groups, matches
-
-
-teams, groups, matches = initialize()
+initialize()
 
 
 def json_response(response, status=200):
@@ -47,6 +48,7 @@ def json_response(response, status=200):
 
 @app.route('/')
 def heartbeat():
+    teams, groups, matches = load_all_objects()
     normalized_teams = [x.__dict__ for x in teams]
     normalized_matches = [x.__dict__ for x in matches]
     normalized_groups = groups
@@ -59,28 +61,39 @@ def heartbeat():
 
 @app.route("/get-match", methods=['POST'])
 def get_match():
-    unassign_all_expired_matches(matches)
-    worker_id = request.json['worker_id']
-    index: int = None
-    match: Match = None
-    match_found = False
-    for index, match in enumerate(matches):
-        if match.status == Match.IN_QUEUE:
-            match_found = True
-            break
-    if not match_found:
-        return json_response({'ok': False, 'message': 'No more matches', 'shutdown': True})
-    match.assign_worker(worker_id)
-    save_all_matches(matches)
-    return json_response({
-        'ok': True,
-        'match_index': index,
-        'map_name': match.map_name,
-        'teams': [
-            {'name': team_name, 'submission': f'{request.url_root}static/submissions/{team_name}.zip'}
-            for team_name in match.teams
-        ]
-    })
+    _, __, matches = load_all_objects()
+    lock_matches()
+    try:
+        unassign_all_expired_matches(matches, False)
+        worker_id = request.json['worker_id']
+        index: int = None
+        match: Match = None
+        match_found = False
+        for index, match in enumerate(matches):
+            if match.status == Match.IN_QUEUE:
+                match_found = True
+                break
+        if not match_found:
+            result = json_response({'ok': False, 'message': 'No more matches', 'shutdown': True})
+        else:
+            match.assign_worker(worker_id)
+            save_all_matches(matches, False)
+            result = json_response({
+                'ok': True,
+                'match_index': index,
+                'map_name': match.map_name,
+                'teams': [
+                    {'name': team_name, 'submission': f'{request.url_root}static/submissions/{team_name}.zip'}
+                    for team_name in match.teams
+                ]
+            })
+    except Exception as e:
+        result = e
+    
+    unlock_matches()
+    if isinstance(result, Exception):
+        raise result
+    return result
 
 
 @app.route('/match-results', methods=['POST'])
@@ -97,6 +110,7 @@ def match_results():
         }
     }
     """
+    teams, _, matches = load_all_objects()
     data = request.json
     if not data:
         log('Invalid match-results request received (not json).')
@@ -119,5 +133,9 @@ def match_results():
 
     match.status = Match.DONE
     match.results = results
+    for team in teams:
+        if team.name in match.teams:
+            team.score += match.results[team.name]
+    save_all_teams(teams)
     save_all_matches(matches)
     return json_response({'ok': True, 'message': 'Match results saved.'})

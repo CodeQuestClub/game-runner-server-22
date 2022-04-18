@@ -6,3 +6,5 @@ static
 app/static
 app/uwsgi.ini
 .DS_Store
+.lock_matches
+.lock_*

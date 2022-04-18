@@ -9,3 +9,4 @@ app/uwsgi.ini
 app/static/
 data/*
 .DS_Store
+.lock_*
