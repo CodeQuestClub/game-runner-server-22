@@ -9,3 +9,4 @@ app/uwsgi.ini
 .lock_matches
 .lock_*
 logs.txt
+.git
