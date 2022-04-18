@@ -8,3 +8,4 @@ app/uwsgi.ini
 .DS_Store
 .lock_matches
 .lock_*
+logs.txt

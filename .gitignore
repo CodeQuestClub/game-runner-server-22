@@ -10,3 +10,4 @@ app/static/
 data/*
 .DS_Store
 .lock_*
+logs.txt
