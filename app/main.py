@@ -52,6 +52,7 @@ def heartbeat():
     normalized_teams = [x.__dict__ for x in teams]
     normalized_matches = [x.__dict__ for x in matches]
     normalized_groups = groups
+    save_all_matches(matches)
     return json_response({
         'teams': normalized_teams,
         'groups': normalized_groups,
