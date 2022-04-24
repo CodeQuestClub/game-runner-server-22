@@ -12,4 +12,4 @@ number_of_groups = 1  # 8
 create_game_matches = not os.path.isfile('../data/matches.json')
 # matching_strategy = 'random'
 matching_strategy = 'full'
-random_matching_matches_per_team = 1 # None
+random_matching_matches_per_team = 200 # None

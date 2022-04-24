@@ -10,3 +10,4 @@ app/uwsgi.ini
 .lock_*
 logs.txt
 .git
+data/submissions
